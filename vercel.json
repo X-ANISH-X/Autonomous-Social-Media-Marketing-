@@ -1,0 +1,19 @@
+{
+    "version": 2,
+    "framework": "nextjs",
+    "buildCommand": "next build",
+    "installCommand": "npm install",
+    "regions": [
+        "sfo1"
+    ],
+    "env": {
+        "GEMINI_API_KEY": "@gemini-api-key",
+        "NEXT_PUBLIC_BASE_URL": "@next-public-base-url",
+        "TWITTER_CLIENT_ID": "@twitter-client-id",
+        "TWITTER_CLIENT_SECRET": "@twitter-client-secret",
+        "LINKEDIN_CLIENT_ID": "@linkedin-client-id",
+        "LINKEDIN_CLIENT_SECRET": "@linkedin-client-secret",
+        "INSTAGRAM_CLIENT_ID": "@instagram-client-id",
+        "INSTAGRAM_CLIENT_SECRET": "@instagram-client-secret"
+    }
+}
