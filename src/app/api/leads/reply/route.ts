@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        const leads = getLeads(projectId);
+        const leads = await getLeads(projectId);
         const lead = leads.find(l => l.id === leadId);
 
         if (!lead) {
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
         // Actually, lead.conversations already has the history. We just append the new reply.
         // And we update status to 'engaged'.
 
-        updateLead(leadId, {
+        await updateLead(leadId, {
             status: 'engaged',
             conversations: [
                 ...lead.conversations,

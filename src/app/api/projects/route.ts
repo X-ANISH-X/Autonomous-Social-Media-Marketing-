@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const project = createProject({ name, logo: logo || '', vision, githubUrl });
+        const project = await createProject({ name, logo: logo || '', vision, githubUrl });
         return NextResponse.json(project, { status: 201 });
     } catch (error) {
         console.error('Error creating project:', error);
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
     try {
-        const projects = getProjects();
+        const projects = await getProjects();
         return NextResponse.json(projects);
     } catch (error) {
         console.error('Error fetching projects:', error);

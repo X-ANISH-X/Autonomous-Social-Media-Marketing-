@@ -11,13 +11,13 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'projectId required' }, { status: 400 });
         }
 
-        const project = getProject(projectId);
+        const project = await getProject(projectId);
         if (!project) {
             return NextResponse.json({ error: 'Project not found' }, { status: 404 });
         }
 
         // Get existing content to avoid repetition
-        const existingContent = getContent(projectId).map(c => c.caption);
+        const existingContent = (await getContent(projectId)).map(c => c.caption);
 
         const result = await generateContent(
             project.name,
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
             status: 'draft' as const,
         }));
 
-        const saved = addContent(contentItems);
+        const saved = await addContent(contentItems);
         return NextResponse.json(saved, { status: 201 });
     } catch (error) {
         console.error('Error generating content:', error);

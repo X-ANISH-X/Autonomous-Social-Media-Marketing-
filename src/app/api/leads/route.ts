@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
         if (!projectId) {
             return NextResponse.json({ error: 'projectId required' }, { status: 400 });
         }
-        const leads = getLeads(projectId);
+        const leads = await getLeads(projectId);
         return NextResponse.json(leads);
     } catch (error) {
         console.error('Error fetching leads:', error);
@@ -30,8 +30,8 @@ export async function PATCH(request: NextRequest) {
         if (status) updates.status = status;
 
         if (sendReply && projectId) {
-            const project = getProject(projectId);
-            const leads = getLeads(projectId);
+            const project = await getProject(projectId);
+            const leads = await getLeads(projectId);
             const lead = leads.find(l => l.id === leadId);
 
             if (project && lead) {
@@ -73,7 +73,7 @@ export async function PATCH(request: NextRequest) {
             }
         }
 
-        const updated = updateLead(leadId, updates);
+        const updated = await updateLead(leadId, updates);
         if (!updated) {
             return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
         }

@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
         if (!projectId) {
             return NextResponse.json({ error: 'projectId required' }, { status: 400 });
         }
-        const content = getContent(projectId);
+        const content = await getContent(projectId);
         return NextResponse.json(content);
     } catch (error) {
         console.error('Error fetching content:', error);

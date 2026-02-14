@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Save token with pending status
-        const token = saveToken({
+        const token = await saveToken({
             projectId,
             name,
             symbol,
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
 
                 const contractAddress = await contract.getAddress();
 
-                updateToken(token.id, {
+                await updateToken(token.id, {
                     contractAddress,
                     txHash: receipt?.hash,
                     status: 'deployed',
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
                 }, { status: 201 });
             } catch (deployError) {
                 console.error('Token deployment error:', deployError);
-                updateToken(token.id, { status: 'failed' });
+                await updateToken(token.id, { status: 'failed' });
                 return NextResponse.json({
                     ...token,
                     status: 'failed',
@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
         if (!projectId) {
             return NextResponse.json({ error: 'projectId required' }, { status: 400 });
         }
-        const token = getToken(projectId);
+        const token = await getToken(projectId);
         return NextResponse.json(token || null);
     } catch (error) {
         console.error('Error fetching token:', error);

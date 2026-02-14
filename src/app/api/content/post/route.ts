@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
 
         // Single content post to specific platform
         if (contentId && platform) {
-            const content = getContent(projectId).find(c => c.id === contentId);
+            const content = (await getContent(projectId)).find(c => c.id === contentId);
             if (!content) {
                 return NextResponse.json({ error: 'Content not found' }, { status: 404 });
             }
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
             const result = await postContent(projectId, content, platform);
 
             if (result.success) {
-                updateContentStatus(contentId, 'posted', result.postUrl);
+                await updateContentStatus(contentId, 'posted', result.postUrl);
             }
 
             return NextResponse.json(result, { status: result.success ? 200 : 500 });
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
         // Update status for successful posts
         for (const result of results) {
             if (result.success) {
-                updateContentStatus(result.contentId, 'posted', result.postUrl);
+                await updateContentStatus(result.contentId, 'posted', result.postUrl);
             }
         }
 

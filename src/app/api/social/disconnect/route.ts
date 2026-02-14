@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'projectId and platform required' }, { status: 400 });
         }
 
-        const removed = disconnectSocial(projectId, platform);
+        const removed = await disconnectSocial(projectId, platform);
 
         if (!removed) {
             return NextResponse.json({ error: 'Account not found' }, { status: 404 });

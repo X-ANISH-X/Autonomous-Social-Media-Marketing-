@@ -11,12 +11,12 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'projectId required' }, { status: 400 });
         }
 
-        const project = getProject(projectId);
+        const project = await getProject(projectId);
         if (!project) {
             return NextResponse.json({ error: 'Project not found' }, { status: 404 });
         }
 
-        const allContent = getContent(projectId);
+        const allContent = await getContent(projectId);
 
         // Generate images for specific content or all without images
         const targetContent = contentId
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
                 );
 
                 // Update the content item with the image URL
-                updateContentImage(content.id, imageUrl);
+                await updateContentImage(content.id, imageUrl);
 
                 results.push({
                     contentId: content.id,

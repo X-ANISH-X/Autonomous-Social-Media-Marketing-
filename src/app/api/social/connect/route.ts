@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
         if (!projectId) {
             return NextResponse.json({ error: 'projectId required' }, { status: 400 });
         }
-        const accounts = getSocialAccounts(projectId);
+        const accounts = await getSocialAccounts(projectId);
         // Strip tokens from client response
         const safeAccounts = accounts.map(({ accessToken, refreshToken, ...rest }) => rest);
         return NextResponse.json(safeAccounts);
