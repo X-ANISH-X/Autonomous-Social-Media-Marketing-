@@ -56,7 +56,7 @@ export async function GET(
         }
 
         // Store the connected account with tokens in our DB
-        connectSocial(
+        await connectSocial(
             result.projectId,
             platform.toLowerCase(),
             result.username,

@@ -1,8 +1,6 @@
 import crypto from 'crypto';
-import path from 'path';
-import fs from 'fs';
+import prisma from './prisma';
 
-const STATE_FILE = path.join(process.cwd(), 'data', 'oauth-state.json');
 const BASE_URL = (process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
 
 // ──────────────────────────── State Management ────────────────────────────
@@ -14,26 +12,37 @@ interface OAuthState {
     createdAt: string;
 }
 
-function saveState(stateKey: string, data: OAuthState) {
-    let states: Record<string, OAuthState> = {};
-    try { states = JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8')); } catch { /* empty */ }
-    states[stateKey] = data;
-    fs.writeFileSync(STATE_FILE, JSON.stringify(states, null, 2));
+async function saveState(stateKey: string, data: OAuthState) {
+    await prisma.oAuthState.create({
+        data: {
+            id: stateKey,
+            platform: data.platform,
+            projectId: data.projectId,
+            codeVerifier: data.codeVerifier,
+            createdAt: new Date(data.createdAt),
+        }
+    });
 }
 
-export function getState(stateKey: string): OAuthState | null {
-    try {
-        const states = JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8'));
-        return states[stateKey] || null;
-    } catch { return null; }
+export async function getState(stateKey: string): Promise<OAuthState | null> {
+    const state = await prisma.oAuthState.findUnique({
+        where: { id: stateKey }
+    });
+
+    if (!state) return null;
+
+    return {
+        platform: state.platform,
+        projectId: state.projectId,
+        codeVerifier: state.codeVerifier || undefined,
+        createdAt: state.createdAt.toISOString(),
+    };
 }
 
-function deleteState(stateKey: string) {
-    try {
-        const states = JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8'));
-        delete states[stateKey];
-        fs.writeFileSync(STATE_FILE, JSON.stringify(states, null, 2));
-    } catch { /* empty */ }
+async function deleteState(stateKey: string) {
+    await prisma.oAuthState.deleteMany({
+        where: { id: stateKey }
+    });
 }
 
 // ──────────────────────────── PKCE Helpers (for Twitter) ────────────────────────────
@@ -50,12 +59,12 @@ function generateCodeChallenge(verifier: string): string {
 // TWITTER (OAuth 2.0 with PKCE)
 // ══════════════════════════════════════════════════════════════════════════
 
-export function getTwitterAuthUrl(projectId: string): string {
+export async function getTwitterAuthUrl(projectId: string): Promise<string> {
     const state = crypto.randomUUID();
     const codeVerifier = generateCodeVerifier();
     const codeChallenge = generateCodeChallenge(codeVerifier);
 
-    saveState(state, { platform: 'twitter', projectId, codeVerifier, createdAt: new Date().toISOString() });
+    await saveState(state, { platform: 'twitter', projectId, codeVerifier, createdAt: new Date().toISOString() });
 
     const params = new URLSearchParams({
         response_type: 'code',
@@ -77,7 +86,7 @@ export async function exchangeTwitterCode(code: string, stateKey: string): Promi
     username: string;
     projectId: string;
 }> {
-    const stateData = getState(stateKey);
+    const stateData = await getState(stateKey);
     if (!stateData || stateData.platform !== 'twitter') throw new Error('Invalid state');
 
     const clientId = process.env.TWITTER_CLIENT_ID || '';
@@ -111,7 +120,7 @@ export async function exchangeTwitterCode(code: string, stateKey: string): Promi
     });
     const userData = await userRes.json();
 
-    deleteState(stateKey);
+    await deleteState(stateKey);
 
     return {
         accessToken: tokenData.access_token,
@@ -126,9 +135,9 @@ export async function exchangeTwitterCode(code: string, stateKey: string): Promi
 // LINKEDIN (OAuth 2.0 Authorization Code)
 // ══════════════════════════════════════════════════════════════════════════
 
-export function getLinkedInAuthUrl(projectId: string): string {
+export async function getLinkedInAuthUrl(projectId: string): Promise<string> {
     const state = crypto.randomUUID();
-    saveState(state, { platform: 'linkedin', projectId, createdAt: new Date().toISOString() });
+    await saveState(state, { platform: 'linkedin', projectId, createdAt: new Date().toISOString() });
 
     const params = new URLSearchParams({
         response_type: 'code',
@@ -148,7 +157,7 @@ export async function exchangeLinkedInCode(code: string, stateKey: string): Prom
     username: string;
     projectId: string;
 }> {
-    const stateData = getState(stateKey);
+    const stateData = await getState(stateKey);
     if (!stateData || stateData.platform !== 'linkedin') throw new Error('Invalid state');
 
     // Exchange code for tokens
@@ -177,7 +186,7 @@ export async function exchangeLinkedInCode(code: string, stateKey: string): Prom
     });
     const profile = await profileRes.json();
 
-    deleteState(stateKey);
+    await deleteState(stateKey);
 
     return {
         accessToken: tokenData.access_token,
@@ -192,9 +201,9 @@ export async function exchangeLinkedInCode(code: string, stateKey: string): Prom
 // INSTAGRAM (OAuth 2.0 via Meta / Facebook)
 // ══════════════════════════════════════════════════════════════════════════
 
-export function getInstagramAuthUrl(projectId: string): string {
+export async function getInstagramAuthUrl(projectId: string): Promise<string> {
     const state = crypto.randomUUID();
-    saveState(state, { platform: 'instagram', projectId, createdAt: new Date().toISOString() });
+    await saveState(state, { platform: 'instagram', projectId, createdAt: new Date().toISOString() });
 
     const scopes = [
         'instagram_business_basic',
@@ -222,16 +231,11 @@ export async function exchangeInstagramCode(code: string, stateKey: string): Pro
     userId: string;
     projectId: string;
 }> {
-    const stateData = getState(stateKey);
+    const stateData = await getState(stateKey);
     if (!stateData || stateData.platform !== 'instagram') throw new Error('Invalid state');
 
     // Strip Instagram's #_ suffix from state
     const cleanState = stateKey.replace(/#_$/, '');
-    if (cleanState !== stateKey) {
-        // Re-lookup with clean state
-        const cleanData = getState(cleanState);
-        if (cleanData) Object.assign(stateData, cleanData);
-    }
 
     // Step 1: Exchange code for short-lived token
     const shortRes = await fetch('https://api.instagram.com/oauth/access_token', {
@@ -271,7 +275,7 @@ export async function exchangeInstagramCode(code: string, stateKey: string): Pro
     );
     const profile = await profileRes.json();
 
-    deleteState(stateKey);
+    await deleteState(stateKey);
 
     return {
         accessToken: longData.access_token,

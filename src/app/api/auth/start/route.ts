@@ -14,13 +14,13 @@ export async function POST(request: NextRequest) {
         switch (platform?.toLowerCase()) {
             case 'twitter':
             case 'x':
-                url = getTwitterAuthUrl(projectId);
+                url = await getTwitterAuthUrl(projectId);
                 break;
             case 'linkedin':
-                url = getLinkedInAuthUrl(projectId);
+                url = await getLinkedInAuthUrl(projectId);
                 break;
             case 'instagram':
-                url = getInstagramAuthUrl(projectId);
+                url = await getInstagramAuthUrl(projectId);
                 break;
             default:
                 return NextResponse.json({ error: `Unsupported platform: ${platform}` }, { status: 400 });

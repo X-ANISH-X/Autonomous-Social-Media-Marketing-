@@ -1,0 +1,13 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://u:p@localhost:5432/d"
+}
+
+model Project {
+  id    String @id @default(uuid())
+  name  String
+}
